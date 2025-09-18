@@ -12,8 +12,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'TIG333 TODO',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF1E5A8A)),
         useMaterial3: true,
+        primaryColor: Color(0xFF1E5A8A),
       ),
       home: TodoListScreen(),
     );
@@ -42,11 +43,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.grey[300],
+        backgroundColor: Color(0xFF1E5A8A),
         title: Text(
           'TIG333 TODO',
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -54,14 +55,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
         centerTitle: true,
         actions: [
           PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: Colors.black),
+            icon: Icon(Icons.more_vert, color: Colors.white),
             onSelected: (String value) {
               print('Selected: $value');
             },
             itemBuilder: (BuildContext context) => [
-              PopupMenuItem(value: 'all', child: Text('all')),
-              PopupMenuItem(value: 'done', child: Text('done')),
-              PopupMenuItem(value: 'undone', child: Text('undone')),
+              PopupMenuItem(value: 'All', child: Text('all')),
+              PopupMenuItem(value: 'Done', child: Text('done')),
+              PopupMenuItem(value: 'Undone', child: Text('undone')),
             ],
           ),
         ],
@@ -94,14 +95,22 @@ class _TodoListScreenState extends State<TodoListScreen> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[400]!, width: 2),
-                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: todoItems[index]['isCompleted'] 
+                            ? Color(0xFF1E5A8A) 
+                            : Colors.grey[400]!, 
+                        width: 2
+                      ),
+                      shape: BoxShape.circle,
+                      color: todoItems[index]['isCompleted'] 
+                          ? Color(0xFF1E5A8A) 
+                          : Colors.transparent,
                     ),
                     child: todoItems[index]['isCompleted']
                         ? Icon(
                             Icons.check,
-                            size: 18,
-                            color: Colors.green,
+                            size: 16,
+                            color: Colors.white,
                           )
                         : null,
                   ),
@@ -142,7 +151,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          color: Colors.grey[400],
+          color: Color(0xFF1E5A8A),
           shape: BoxShape.circle,
         ),
         child: FloatingActionButton(
@@ -177,9 +186,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.grey[300],
+        backgroundColor: Color(0xFF1E5A8A),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -187,7 +196,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         title: Text(
           'TIG333 TODO',
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -224,12 +233,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
+                backgroundColor: Color(0xFF1E5A8A),
+                foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey[300]!, width: 1),
                 ),
               ),
               child: Text(
