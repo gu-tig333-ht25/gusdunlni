@@ -27,7 +27,7 @@ class TodoModel {
 enum TodoFilter { all, done, undone }
 
 class TodoProvider with ChangeNotifier {
-  List<TodoModel> _todos = [
+  final List<TodoModel> _todos = [
     TodoModel(id: '1', text: 'Write a book', isCompleted: false),
     TodoModel(id: '2', text: 'Do homework', isCompleted: false),
     TodoModel(id: '3', text: 'Tidy room', isCompleted: true),
