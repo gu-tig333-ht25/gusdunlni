@@ -3,8 +3,21 @@ import 'package:provider/provider.dart';
 import '../todo_provider.dart';
 import 'add_task_screen.dart';
 
-class TodoListScreen extends StatelessWidget {
+class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
+
+  @override
+  State<TodoListScreen> createState() => _TodoListScreenState();
+}
+
+class _TodoListScreenState extends State<TodoListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TodoProvider>().initializeApi();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
