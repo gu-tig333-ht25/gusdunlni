@@ -3,8 +3,21 @@ import 'package:provider/provider.dart';
 import '../todo_provider.dart';
 import 'add_task_screen.dart';
 
-class TodoListScreen extends StatelessWidget {
+class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
+
+  @override
+  State<TodoListScreen> createState() => _TodoListScreenState();
+}
+
+class _TodoListScreenState extends State<TodoListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TodoProvider>().initializeApi();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +64,66 @@ class TodoListScreen extends StatelessWidget {
         color: Colors.grey[100],
         child: Consumer<TodoProvider>(
           builder: (context, todoProvider, child) {
+            if (todoProvider.error != null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red[400],
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Error',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.red[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      todoProvider.error!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => todoProvider.initializeApi(),
+                      child: Text('Try Again'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Show loading indicator
+            if (todoProvider.isLoading && todoProvider.todos.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Color(0xFF1E5A8A),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading todos...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final filteredTodos = todoProvider.filteredTodos;
 
             if (filteredTodos.isEmpty) {
@@ -85,17 +158,49 @@ class TodoListScreen extends StatelessWidget {
               );
             }
 
-            return ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: filteredTodos.length,
-              itemBuilder: (context, index) {
-                final todo = filteredTodos[index];
-                return _TodoItemWidget(
-                  todo: todo,
-                  onToggle: () => todoProvider.toggleTodoCompletion(todo.id),
-                  onDelete: () => todoProvider.deleteTodo(todo.id),
-                );
-              },
+            return Stack(
+              children: [
+                ListView.builder(
+                  padding: EdgeInsets.all(16),
+                  itemCount: filteredTodos.length,
+                  itemBuilder: (context, index) {
+                    final todo = filteredTodos[index];
+                    return _TodoItemWidget(
+                      todo: todo,
+                      onToggle: () => todoProvider.toggleTodoCompletion(todo.id),
+                      onDelete: () => todoProvider.deleteTodo(todo.id),
+                    );
+                  },
+                ),
+                // Show loading overlay for ongoing operations
+                if (todoProvider.isLoading && todoProvider.todos.isNotEmpty)
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withValues(alpha: 0.3),
+                            spreadRadius: 1,
+                            blurRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF1E5A8A),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             );
           },
         ),

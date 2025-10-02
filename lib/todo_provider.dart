@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'todo_api_service.dart';
 
 class TodoModel {
   final String id;
@@ -22,27 +23,40 @@ class TodoModel {
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
+
+  // Convert from API format to used model
+  factory TodoModel.fromApi(Map<String, dynamic> json) {
+    return TodoModel(
+      id: json['id'],
+      text: json['title'],
+      isCompleted: json['done'],
+    );
+  }
+
+  // Convert to API format
+  Map<String, dynamic> toApi() {
+    return {
+      'id': id,
+      'title': text,
+      'done': isCompleted,
+    };
+  }
 }
 
 enum TodoFilter { all, done, undone }
 
 class TodoProvider with ChangeNotifier {
-  final List<TodoModel> _todos = [
-    TodoModel(id: '1', text: 'Write a book', isCompleted: false),
-    TodoModel(id: '2', text: 'Do homework', isCompleted: false),
-    TodoModel(id: '3', text: 'Tidy room', isCompleted: true),
-    TodoModel(id: '4', text: 'Watch TV', isCompleted: false),
-    TodoModel(id: '5', text: 'Nap', isCompleted: false),
-    TodoModel(id: '6', text: 'Shop groceries', isCompleted: false),
-    TodoModel(id: '7', text: 'Have fun', isCompleted: false),
-    TodoModel(id: '8', text: 'Meditate', isCompleted: false),
-  ];
-
+  List<TodoModel> _todos = [];
   TodoFilter _currentFilter = TodoFilter.all;
+  bool _isLoading = false;
+  String? _error;
+  final TodoApiService _apiService = TodoApiService();
 
-  // Getters
   List<TodoModel> get todos => List.unmodifiable(_todos);
   TodoFilter get currentFilter => _currentFilter;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  bool get hasApiKey => _apiService.hasApiKey;
 
   List<TodoModel> get filteredTodos {
     switch (_currentFilter) {
@@ -59,37 +73,109 @@ class TodoProvider with ChangeNotifier {
   int get completedTodos => _todos.where((todo) => todo.isCompleted).length;
   int get pendingTodos => _todos.where((todo) => !todo.isCompleted).length;
 
-  // Methods
-  void addTodo(String text) {
-    if (text.trim().isEmpty) return;
-
-    final newTodo = TodoModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: text.trim(),
-      isCompleted: false,
-    );
-
-    _todos.add(newTodo);
-    notifyListeners();
-  }
-
-  void toggleTodoCompletion(String id) {
-    final index = _todos.indexWhere((todo) => todo.id == id);
-    if (index != -1) {
-      _todos[index] = _todos[index].copyWith(
-        isCompleted: !_todos[index].isCompleted,
-      );
-      notifyListeners();
+  // API Methods
+  Future<void> initializeApi() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      await _apiService.initialize();
+      await loadTodos();
+    } catch (e) {
+      _setError('Failed to initialize: $e');
+    } finally {
+      _setLoading(false);
     }
   }
 
-  void deleteTodo(String id) {
-    _todos.removeWhere((todo) => todo.id == id);
-    notifyListeners();
+  Future<void> loadTodos() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final todosJson = await _apiService.getTodos();
+      _todos = todosJson.map((json) => TodoModel.fromApi(json)).toList();
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load todos: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> addTodo(String text) async {
+    if (text.trim().isEmpty) return;
+    
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final todosJson = await _apiService.addTodo(text.trim());
+      _todos = todosJson.map((json) => TodoModel.fromApi(json)).toList();
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to add todo: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> toggleTodoCompletion(String id) async {
+    final todo = _todos.firstWhere((t) => t.id == id);
+    
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      await _apiService.updateTodo(id, todo.text, !todo.isCompleted);
+      
+      // Update local state
+      final index = _todos.indexWhere((t) => t.id == id);
+      if (index != -1) {
+        _todos[index] = _todos[index].copyWith(
+          isCompleted: !_todos[index].isCompleted,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError('Failed to update todo: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> deleteTodo(String id) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      await _apiService.deleteTodo(id);
+      _todos.removeWhere((todo) => todo.id == id);
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to delete todo: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void setFilter(TodoFilter filter) {
     _currentFilter = filter;
     notifyListeners();
+  }
+
+  // Helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  void _setError(String error) {
+    _error = error;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    _error = null;
   }
 }
